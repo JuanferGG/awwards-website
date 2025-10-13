@@ -1,52 +1,38 @@
-import { useRef } from "react";
-import { useState, useEffect } from "react";
+import { useRef, useState, useEffect } from "react";
 import Button from "./Button";
 import { TiLocationArrow } from "react-icons/ti";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
+import { ScrollTrigger } from "gsap/all";
+
+gsap.registerPlugin(ScrollTrigger)
 
 export const Hero = () => {
   const [currentIndex, setCurrentIndex] = useState(1);
-  const [backgroundIndex, setBackgroundIndex] = useState(1);
   const [hasClicked, setHasClicked] = useState(false);
+  const [backgroundIndex] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
-  const [loadedVideos, setLoadedVideos] = useState(0);
-  const [activeBackgroundVideo, setActiveBackgroundVideo] = useState(1); // 1 o 2
+  const [, setLoadedVideos] = useState(0);
+  const [activeBackgroundVideo, setActiveBackgroundVideo] = useState(1);
 
   const totalVideos = 4;
+
   const nextVideoRef = useRef(null);
   const backgroundVideo1Ref = useRef(null);
   const backgroundVideo2Ref = useRef(null);
 
-  // Crossfade suave entre videos de fondo
-  useEffect(() => {
-    if (hasClicked) {
-      const timer = setTimeout(() => {
-        const currentVideo = activeBackgroundVideo === 1 ? backgroundVideo1Ref.current : backgroundVideo2Ref.current;
-        const nextVideo = activeBackgroundVideo === 1 ? backgroundVideo2Ref.current : backgroundVideo1Ref.current;
-        
-        if (nextVideo) {
-          // Configurar el nuevo video
-          nextVideo.src = getVideoSrc(currentIndex);
-          nextVideo.currentTime = currentVideo?.currentTime || 0;
-          nextVideo.play();
-          
-          // Crossfade con GSAP
-          gsap.to(currentVideo, { opacity: 0, duration: 0.5 });
-          gsap.to(nextVideo, { opacity: 1, duration: 0.5 });
-          
-          // Cambiar el video activo
-          setActiveBackgroundVideo(activeBackgroundVideo === 1 ? 2 : 1);
-        }
-      }, 1000);
-
-      return () => clearTimeout(timer);
-    }
-  }, [currentIndex, hasClicked, activeBackgroundVideo]);
-
+  // ✅ Manejo de carga de videos
   const handleVideoLoad = () => {
-    setLoadedVideos((prev) => prev + 1);
+    setLoadedVideos((prev) => {
+      const updated = prev + 1;
+      if (updated === totalVideos) {
+        setIsLoading(false);
+      }
+      return updated;
+    });
   };
+
+  const getVideoSrc = (index) => `videos/hero-${index}.mp4`;
 
   const upComingVideoIndex = (currentIndex % totalVideos) + 1;
 
@@ -55,6 +41,36 @@ export const Hero = () => {
     setCurrentIndex(upComingVideoIndex);
   };
 
+  // Crossfade suave entre videos de fondo
+  useEffect(() => {
+    if (hasClicked) {
+      const timer = setTimeout(() => {
+        const currentVideo =
+          activeBackgroundVideo === 1
+            ? backgroundVideo1Ref.current
+            : backgroundVideo2Ref.current;
+        const nextVideo =
+          activeBackgroundVideo === 1
+            ? backgroundVideo2Ref.current
+            : backgroundVideo1Ref.current;
+
+        if (nextVideo) {
+          nextVideo.src = getVideoSrc(currentIndex);
+          nextVideo.currentTime = currentVideo?.currentTime || 0;
+          nextVideo.play();
+
+          gsap.to(currentVideo, { opacity: 0, duration: 0.5 });
+          gsap.to(nextVideo, { opacity: 1, duration: 0.5 });
+
+          setActiveBackgroundVideo(activeBackgroundVideo === 1 ? 2 : 1);
+        }
+      }, 1000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [currentIndex, hasClicked, activeBackgroundVideo]);
+
+  // Animación del mini video al hacer clic
   useGSAP(
     () => {
       if (hasClicked) {
@@ -92,65 +108,93 @@ export const Hero = () => {
     }
   );
 
-  const getVideoSrc = (index) => `videos/hero-${index}.mp4`;
+  // Animación del marco de video con scroll
+  useGSAP(() => {
+    gsap.set("#video-frame", {
+      clipPath: "polygon(14% 0, 72% 0, 88% 90%, 0 95%)",
+      borderRadius: "0% 0% 40% 10%",
+    });
+    gsap.from("#video-frame", {
+      clipPath: "polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)",
+      borderRadius: "0% 0% 0% 0%",
+      ease: "power1.inOut",
+      scrollTrigger: {
+        trigger: "#video-frame",
+        start: "center center",
+        end: "bottom center",
+        scrub: true,
+      },
+    });
+  });
 
   return (
     <div className="relative h-dvh w-screen overflow-x-hidden">
+      {/* ✅ Loader */}
+      {isLoading && (
+        <div className="flex-center absolute z-[100] h-dvh w-screen overflow-hidden bg-violet-50">
+          <div className="three-body">
+            <div className="three-body__dot" />
+            <div className="three-body__dot" />
+            <div className="three-body__dot" />
+          </div>
+        </div>
+      )}
+
       <div
         id="video-frame"
         className="relative z-10 h-dvh w-screen overflow-hidden"
       >
-        <div className="">
-          {/* Video miniatura */}
-          <div className="mask-clip-path absolute-center absolute z-50 size-64 cursor-pointer overflow-hidden rounded-lg">
-            <div
-              onClick={handleMiniVidClick}
-              className="origin-center scale-50 opacity-0 transition-all 
-            duration-300 ease-in hover:scale-100 hover:opacity-100"
-            >
-              <video
-                ref={nextVideoRef}
-                src={getVideoSrc(upComingVideoIndex)}
-                loop
-                muted
-                id="current-video"
-                className="size-64 origin-center scale-150 object-cover object-center rounded-lg"
-                onLoadedData={handleVideoLoad}
-              />
-            </div>
+        {/* Mini video clickable */}
+        <div className="mask-clip-path absolute-center absolute z-50 size-64 cursor-pointer overflow-hidden rounded-lg">
+          <div
+            onClick={handleMiniVidClick}
+            className="origin-center scale-50 opacity-0 transition-all duration-300 ease-in hover:scale-100 hover:opacity-100"
+          >
+            <video
+              ref={nextVideoRef}
+              src={getVideoSrc(upComingVideoIndex)}
+              loop
+              muted
+              id="current-video"
+              className="size-64 origin-center scale-150 object-cover object-center rounded-lg"
+              onLoadedData={handleVideoLoad}
+            />
           </div>
-          {/* Video Grande */}
-          <video
-            ref={nextVideoRef}
-            src={getVideoSrc(currentIndex)}
-            loop
-            muted
-            id="next-video"
-            className="absolute-center invisible absolute z-20 size-64 object-cover object-center"
-            onLoadedData={handleVideoLoad}
-          />
-          
-          {/* Videos de fondo alternados para crossfade */}
-          <video
-            ref={backgroundVideo1Ref}
-            src={getVideoSrc(backgroundIndex)}
-            autoPlay
-            loop
-            muted
-            className="absolute left-0 top-0 size-full object-cover object-center"
-            style={{ opacity: activeBackgroundVideo === 1 ? 1 : 0 }}
-            onLoadedData={handleVideoLoad}
-          />
-          <video
-            ref={backgroundVideo2Ref}
-            src={getVideoSrc(backgroundIndex)}
-            loop
-            muted
-            className="absolute left-0 top-0 size-full object-cover object-center"
-            style={{ opacity: activeBackgroundVideo === 2 ? 1 : 0 }}
-            onLoadedData={handleVideoLoad}
-          />
         </div>
+
+        {/* Video grande que crece al hacer clic */}
+        <video
+          ref={nextVideoRef}
+          src={getVideoSrc(currentIndex)}
+          loop
+          muted
+          id="next-video"
+          className="absolute-center invisible absolute z-20 size-64 object-cover object-center"
+          onLoadedData={handleVideoLoad}
+        />
+
+        {/* ✅ Videos de fondo alternados para crossfade */}
+        <video
+          ref={backgroundVideo1Ref}
+          src={getVideoSrc(backgroundIndex)}
+          autoPlay
+          loop
+          muted
+          className="absolute left-0 top-0 size-full object-cover object-center"
+          style={{ opacity: activeBackgroundVideo === 1 ? 1 : 0 }}
+          onLoadedData={handleVideoLoad}
+        />
+        <video
+          ref={backgroundVideo2Ref}
+          src={getVideoSrc(backgroundIndex)}
+          loop
+          muted
+          className="absolute left-0 top-0 size-full object-cover object-center"
+          style={{ opacity: activeBackgroundVideo === 2 ? 1 : 0 }}
+          onLoadedData={handleVideoLoad}
+        />
+
+        {/* Texto y botón */}
         <h1 className="special-font hero-heading absolute bottom-5 right-5 z-40 text-blue-75">
           G<b>a</b>ming
         </h1>
@@ -172,6 +216,7 @@ export const Hero = () => {
           </div>
         </div>
       </div>
+
       <h1 className="special-font hero-heading absolute bottom-5 right-5 text-black">
         G<b>a</b>ming
       </h1>
