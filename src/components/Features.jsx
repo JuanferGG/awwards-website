@@ -22,7 +22,7 @@ const BentoTilt = ({ children, className = "" }) => {
     setTransformStyle(newTransform);
   };
 
-  const handleMouseLeave = (e) => {
+  const handleMouseLeave = () => {
     setTransformStyle("");
   };
 
@@ -39,7 +39,7 @@ const BentoTilt = ({ children, className = "" }) => {
   );
 };
 
-const BentoCard = ({ src, title, description, isComingSoon }) => {
+const BentoCard = ({ src, title, description }) => {
   return (
     <div className="relative size-full ">
       <video
@@ -85,7 +85,6 @@ export const Features = () => {
             </>
           }
           description="A cross-platform metagame app, turning your activities across Web2 and Web3 games into a rewarding adventure."
-          isComingSoon
         />
       </BentoTilt>
       <div className="grid h-[135vh] grid-cols-2 grid-rows-3 gap-7">
@@ -98,7 +97,6 @@ export const Features = () => {
               </>
             }
             description="An anime and gaming-inspired NFT collection - the IP primed for expansion."
-            isComingSoon
           />
         </BentoTilt>
 
@@ -111,7 +109,6 @@ export const Features = () => {
               </>
             }
             description="A gamified social hub, adding a new dimension of play to social interaction for Web3 communities."
-            isComingSoon
           />
         </BentoTilt>
         <BentoTilt className="bento-tilt_1 me-14 md:col-span-1 md:me-0">
@@ -123,7 +120,6 @@ export const Features = () => {
               </>
             }
             description="A cross-world AI Agent - elevating your gameplay to be more fun and productive."
-            isComingSoon
           />
         </BentoTilt>
 
